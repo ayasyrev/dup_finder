@@ -1,4 +1,5 @@
-# nbdev template
+# dup_finder
+> Utils to find duplicates.
 
-Use this template to more easily create your nbdev project.
 
+No docs yet.
