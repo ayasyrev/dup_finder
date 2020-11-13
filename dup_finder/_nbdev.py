@@ -2,9 +2,14 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {}
+index = {"ls": "01_utils.ipynb",
+         "Path.ls": "00_dup_finder.ipynb",
+         "Path.lf": "00_dup_finder.ipynb",
+         "Path.ld": "00_dup_finder.ipynb",
+         "ls_print": "01_utils.ipynb"}
 
-modules = []
+modules = ["dup_finder.py",
+           "utils.py"]
 
 doc_url = "https://ayasyrev.github.io/dup_finder/"
 

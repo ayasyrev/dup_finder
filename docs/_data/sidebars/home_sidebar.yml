@@ -10,8 +10,11 @@ entries:
       title: Overview
       url: /
     - output: web,pdf
-      title: module name here
-      url: /dup_finder
+      title: dup_finder
+      url: dup_finder.html
+    - output: web,pdf
+      title: utils
+      url: utils.html
     output: web
     title: dup_finder
   output: web
