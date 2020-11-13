@@ -8,7 +8,8 @@ index = {"ls": "01_utils.ipynb",
          "Path.ld": "00_dup_finder.ipynb",
          "ls_print": "01_utils.ipynb"}
 
-modules = ["dup_finder.py"]
+modules = ["dup_finder.py",
+           "utils.py"]
 
 doc_url = "https://ayasyrev.github.io/dup_finder/"
 

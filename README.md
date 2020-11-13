@@ -2,4 +2,4 @@
 > Utils to find duplicates.
 
 
-No docs yet.
+Find all files in dest folder and find duplicates files.
