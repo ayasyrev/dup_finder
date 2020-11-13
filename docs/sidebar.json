@@ -1,6 +1,7 @@
 {
   "dup_finder": {
     "Overview": "/",
-    "module name here": "/dup_finder"
+    "dup_finder": "dup_finder.html",
+    "utils": "utils.html"
   }
 }
