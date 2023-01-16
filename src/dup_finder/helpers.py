@@ -63,7 +63,7 @@ def hash_file(
     buf_size: int = BUF_SIZE,
 ) -> str:
     result = hash_func()
-    with open(filename, 'rb') as file:
+    with open(filename, "rb") as file:
         while True:
             data = file.read(buf_size)
             if data:
@@ -78,7 +78,7 @@ def hash_header(
     header_size: int = HEADER_SIZE,
 ) -> str:
     result = hash_func()
-    with open(filename, 'rb') as file:
+    with open(filename, "rb") as file:
         data = file.read(header_size)
     result.update(data)
     return result.hexdigest()

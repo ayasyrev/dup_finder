@@ -31,7 +31,11 @@ class File:
         return f"{self.path} size: {bytes_human(self.size)}"
 
 
-def append2item(dict2app: dict[Union[str, int], list[int]], key: Union[str, int], value: int) -> None:
+def append2item(
+    dict2app: dict[Union[str, int], list[int]],
+    key: Union[str, int],
+    value: int,
+) -> None:
     if key in dict2app:
         if value not in dict2app[key]:
             dict2app[key].append(value)
@@ -58,7 +62,9 @@ class FileList:
         for idx, file in enumerate(self._file_list):
             append2item(self.size_file, file.size, idx)
         self.sizes = sorted(self.size_file.keys(), reverse=True)
-        self.dup_size_candidates = [size for size in self.sizes if len(self.size_file[size]) > 1]
+        self.dup_size_candidates = [
+            size for size in self.sizes if len(self.size_file[size]) > 1
+        ]
 
     def __getitem__(self, index: int) -> File:
         return self._file_list[index]
@@ -83,9 +89,13 @@ class FileList:
         idx = idx or len(self.dup_size_candidates)
         for size in self.dup_size_candidates[:idx]:
             for item in self.size_file[size]:
-                append2item(self._head_hash_candidates, self._file_list[item].head_hash, item)
+                append2item(
+                    self._head_hash_candidates, self._file_list[item].head_hash, item
+                )
         # check sizes for candidates list
-        self._head_hash_candidates = {k: v for k, v in self._head_hash_candidates.items() if len(v) > 1}
+        self._head_hash_candidates = {
+            k: v for k, v in self._head_hash_candidates.items() if len(v) > 1
+        }
         print(f"len of head_hash candidates: {len(self._head_hash_candidates)}")
 
     def find_dups(self, idx: Optional[int] = None):
