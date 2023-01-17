@@ -48,7 +48,7 @@ class FileList:
     _file_list: list[File]
     _head_hash_candidates: dict[str, list[int]] = {}
     dup_size_candidates: list[int] = []
-    dups: dict[str, list[int]] = {}
+    _dups: dict[str, list[int]] = {}
 
     def __init__(
         self,
@@ -59,12 +59,17 @@ class FileList:
         self._file_list: list[File] = [File(item) for item in files]
         self._file_list.sort(key=lambda item: item.size, reverse=True)
         self.size_file: dict[int, list[int]] = {}
+        self.size_all = 0
         for idx, file in enumerate(self._file_list):
             append2item(self.size_file, file.size, idx)
+            self.size_all += file.size
         self.sizes = sorted(self.size_file.keys(), reverse=True)
         self.dup_size_candidates = [
             size for size in self.sizes if len(self.size_file[size]) > 1
         ]
+        print(
+            f"Total {self.len} files, {bytes_human(self.size_all)}, max size {bytes_human(self.sizes[0])} max candid {bytes_human(self.dup_size_candidates[0])} {len(self.dup_size_candidates)} candidates"
+        )
 
     def __getitem__(self, index: int) -> File:
         return self._file_list[index]
@@ -106,5 +111,18 @@ class FileList:
         for _head_hash, idx_list in self._head_hash_candidates.items():
             for item in idx_list:
                 append2item(hash_dict, self._file_list[item].hash, item)
-        self.dups = {k: v for k, v in hash_dict.items() if len(v) > 1}
-        print(f"Len of dups dict: {len(self.dups)}")
+        self._dups = {k: v for k, v in hash_dict.items() if len(v) > 1}
+        self._dups_kyes = list(self._dups.keys())
+        print(f"Len of dups dict: {len(self._dups)}")
+        print(
+            f"size of dups {bytes_human(sum(self._file_list[idx_list[0]].size * (len(idx_list) - 1) for idx_list in self._dups.values()))}"
+        )
+
+    def dup(self, id: int):
+        return [self._file_list[file_id] for file_id in self._dups[self._dups_kyes[id]]]
+
+    def dup_list(self, id: int):
+        res = []
+        for item in self._dups_kyes[:id]:
+            res.append(list(self._file_list[file_id] for file_id in self._dups[item]))
+        return res

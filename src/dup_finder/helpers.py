@@ -2,10 +2,11 @@ import hashlib
 import os
 
 from pathlib import Path, PosixPath
-from typing import Callable, Iterator, List, Union
+from typing import Callable, List, Union
 
 
-PathOrStr = Union[Path, str]
+PathOrStr = Union[Path, str, os.DirEntry[str]]
+ListDirEntry = List[os.DirEntry[str]]
 
 
 def ls(path: PathOrStr) -> List[str]:
@@ -23,8 +24,8 @@ def ld(path: Union[str, PosixPath]) -> List[PosixPath]:
     return [item.name for item in os.scandir(path) if item.is_dir()]
 
 
-def _get_dirs_files(path: PathOrStr) -> tuple[List[os.DirEntry], List[os.DirEntry]]:
-    d_f: dict[bool, List[os.DirEntry]] = {True: [], False: []}
+def _get_dirs_files(path: PathOrStr) -> tuple[ListDirEntry, ListDirEntry]:
+    d_f: dict[bool, ListDirEntry] = {True: [], False: []}
     for dir_entry in os.scandir(path):
         d_f[dir_entry.is_dir()].append(dir_entry)
     return d_f[True], d_f[False]
@@ -33,7 +34,7 @@ def _get_dirs_files(path: PathOrStr) -> tuple[List[os.DirEntry], List[os.DirEntr
 def get_dirs_files(
     path: PathOrStr,
     recursive: bool = False,
-) -> tuple[List[os.DirEntry], List[os.DirEntry]]:
+) -> tuple[ListDirEntry, ListDirEntry]:
     """return list of dirs and list of files, option - recursive"""
     dirs, files = _get_dirs_files(path)
     if recursive:
