@@ -19,7 +19,7 @@ def lf(path: PathOrStr) -> List[str]:
     return [item.name for item in os.scandir(path) if item.is_file()]
 
 
-def ld(path: Union[str, PosixPath]) -> List[PosixPath]:
+def ld(path: Union[str, PosixPath]) -> List[str]:
     """Return list of directory's in directory."""
     return [item.name for item in os.scandir(path) if item.is_dir()]
 
@@ -47,11 +47,12 @@ def get_dirs_files(
 
 def bytes_human(size: int) -> str:
     "Return human readable memory size. Limited to terrabytes."
+    f_size = float(size)
     for symbol in ["B", "Kb", "Mb", "Gb", "Tb"]:
-        if abs(size) < 1024.0:
-            return f"{size:3.2f}{symbol}"
-        size /= 1024.0
-    return f"{size * 1024:.2f}Tb"
+        if abs(f_size) < 1024.0:
+            return f"{f_size:3.2f}{symbol}"
+        f_size /= 1024.0
+    return f"{f_size * 1024:.2f}Tb"
 
 
 BUF_SIZE = 65536
@@ -83,22 +84,3 @@ def hash_header(
         data = file.read(header_size)
     result.update(data)
     return result.hexdigest()
-
-
-def get_dirs_files_2(path: Union[str, PosixPath], recursive=True) -> tuple[List, List]:
-    if isinstance(path, str):
-        path = Path(path)
-    dirs = []
-    files = []
-    for entry in os.scandir(path):
-        if entry.is_dir():
-            dirs.append(path / entry)
-        else:
-            files.append(path / entry)
-    if recursive:
-        for entry in dirs.copy():
-            dirs_files = get_dirs_files(entry)
-            if len(dirs_files[0]) > 0:
-                dirs.append(dirs_files[0])
-            files.extend(dirs_files[1])
-    return dirs, files
