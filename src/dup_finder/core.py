@@ -40,6 +40,7 @@ class FileList:
         path: PathOrStr,
         recursive: bool = True,
     ) -> None:
+        self.path = Path(path)
         _, files = get_dirs_files(path, recursive=recursive)
         self._file_list: list[File] = [File(item) for item in files]
         self._file_list.sort(key=lambda item: item.size, reverse=True)
@@ -97,12 +98,19 @@ class FileList:
         for item in self.size_file[size]:
             print(self._file_list[item])
 
-    def find_head_hash_candidates(self, idx: int | None = None):
+    def find_head_hash_candidates(
+        self,
+        idx: int | None = None,
+        min_size: int = 1048576,
+    ):
         idx = idx or len(self.dup_size_candidates)
         head_hash_candidates: dict[str, set[int]] = defaultdict(set)
         for size in self.dup_size_candidates[:idx]:
-            for item in self.size_file[size]:
-                head_hash_candidates[self._file_list[item].head_hash].add(item)
+            if size >= min_size: 
+                for item in self.size_file[size]:
+                    head_hash_candidates[self._file_list[item].head_hash].add(item)
+            else:
+                break
         # check sizes for candidates list
         self._head_hash_candidates = {
             k: v for k, v in head_hash_candidates.items() if len(v) > 1
@@ -136,7 +144,8 @@ class FileList:
             for file_id in self._dups[self._dups_keys[idx]]
         ]
 
-    def dup_list(self, idx: int) -> list[list[File]]:
+    def dup_list(self, idx: int | None = None) -> list[list[File]]:
+        idx = idx or len(self._dups_keys)
         res: list[list[File]] = []
         for item in self._dups_keys[:idx]:
             res.append(
@@ -146,6 +155,18 @@ class FileList:
                 )
             )
         return res
+
+    def move_dups(self, dest: PathOrStr | None = None):
+        dest_path = dest or self.path / "dups"
+        dest_path.mkdir(exist_ok=True)
+        dups_list = self.dup_list()
+        for pair in dups_list:
+            pair.sort(key=lambda item: len(str(item.path)))  # sort by path length
+            pair.pop(0)  # leave shortest
+            for file in pair:
+                new_name = dest_path / file.path.relative_to(self.path)
+                new_name.parent.mkdir(exist_ok=True, parents=True)
+                file.path.rename(new_name)
 
     def check_sizes(self, other: "FileList"):
         self._common_sizes = set(self.sizes).intersection(other.sizes)
@@ -197,7 +218,8 @@ class FileList:
             for file_id in self._out_dups[self._out_dups_keys[idx]]
         ]
 
-    def out_dup_list(self, idx: int) -> list[list[File]]:
+    def out_dup_list(self, idx: int | None) -> list[list[File]]:
+        idx = idx or len(self._out_dups_keys)
         res: list[list[File]] = []
         for item in self._out_dups_keys[:idx]:
             res.append(
@@ -208,5 +230,11 @@ class FileList:
             )
         return res
 
-    def move_dups(self, dest_path: PathOrStr):
-        pass
+    def move_out_dups(self, dest: PathOrStr | None = None):
+        dest_path = dest or self.path.parent / "dups"
+        dest_path.mkdir(exist_ok=True)
+        for item in self._out_dups_keys:
+            for file_id in self._out_dups[item]:
+                file_path = self._file_list[file_id].path
+                new_name = dest_path / file_path.relative_to(self.path)
+                file_path.rename(new_name)
