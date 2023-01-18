@@ -138,7 +138,7 @@ class FileList:
         )
         print(f"size of dups {dups_size}")
 
-    def dup(self, idx: int) -> list[File]:
+    def dup(self, idx: int = 0) -> list[File]:
         return [
             self._file_list[file_id]
             for file_id in self._dups[self._dups_keys[idx]]
@@ -212,7 +212,7 @@ class FileList:
         other._out_dups = {k: hash_dict_out[k] for k in intersection}
         other._out_dups_keys = intersection
 
-    def out_dup(self, idx: int) -> list[File]:
+    def out_dup(self, idx: int = 0) -> list[File]:
         return [
             self._file_list[file_id]
             for file_id in self._out_dups[self._out_dups_keys[idx]]
