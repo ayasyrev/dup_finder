@@ -237,4 +237,5 @@ class FileList:
             for file_id in self._out_dups[item]:
                 file_path = self._file_list[file_id].path
                 new_name = dest_path / file_path.relative_to(self.path)
+                new_name.parent.mkdir(exist_ok=True, parents=True)
                 file_path.rename(new_name)
