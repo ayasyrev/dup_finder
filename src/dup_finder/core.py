@@ -34,10 +34,6 @@ class File:
 class FileList:
 
     _file_list: list[File]
-    _head_hash_candidates: dict[str, set[int]] = {}
-    dup_size_candidates: list[int] = []
-    _dups: dict[str, set[int]] = defaultdict(set)
-    _dups_keys: list[str] = []
 
     def __init__(
         self,
@@ -53,15 +49,34 @@ class FileList:
             self.size_file[file.size].add(idx)
             self.size_all += file.size
         self.sizes = sorted(self.size_file.keys(), reverse=True)
-        self.dup_size_candidates = [
+        self.dup_size_candidates: list[int] = [
             size for size in self.sizes if len(self.size_file[size]) > 1
         ]
-        print(
+        self._head_hash_candidates: dict[str, set[int]] = {}
+        self._dups: dict[str, set[int]] = defaultdict(set)
+        self._dups_keys: list[str] = []
+        self._out_size_candidates: dict[int, set[int]] = defaultdict(set)
+        self._out_head_hash_candidates: dict[str, set[int]] = {}
+        self._out_dups: dict[str, set[int]] = {}
+        self._out_dups_keys: list[str] = []
+        print(self.__repr__())
+
+    def __repr__(self) -> str:
+        res = (
             f"Total {self.len} files, {bytes_human(self.size_all)}, "
             f"max size {bytes_human(self.sizes[0])} "
-            f"max candid {bytes_human(self.dup_size_candidates[0])} "
-            f"{len(self.dup_size_candidates)} candidates"
         )
+        cand_repr = ""
+        if len(self.dup_size_candidates) > 0:
+            cand_repr = (
+                f"{len(self.dup_size_candidates)} candidates "
+                f"max candid {bytes_human(self.dup_size_candidates[0])} "
+            )
+        if self._head_hash_candidates:
+            cand_repr = (
+                f"{len(self._head_hash_candidates)} head_hash candidates, "
+            )
+        return res + cand_repr
 
     def __getitem__(self, index: int) -> File:
         return self._file_list[index]
@@ -115,7 +130,7 @@ class FileList:
         )
         print(f"size of dups {dups_size}")
 
-    def dup(self, idx: int):
+    def dup(self, idx: int) -> list[File]:
         return [
             self._file_list[file_id]
             for file_id in self._dups[self._dups_keys[idx]]
@@ -131,3 +146,67 @@ class FileList:
                 )
             )
         return res
+
+    def check_sizes(self, other: "FileList"):
+        self._common_sizes = set(self.sizes).intersection(other.sizes)
+        if self._common_sizes:
+            print(
+                f"{len(self._common_sizes)} inters, "
+                f"max size {bytes_human(next(iter(self._common_sizes)))}"
+            )
+
+    def check_headers(self, other: "FileList"):
+        header_hash: dict[str, set[int]] = defaultdict(set)
+        header_hash_out: dict[str, set[int]] = defaultdict(set)
+        for item_size in self._common_sizes:
+            for file_idx in self.size_file[item_size]:
+                header_hash[self._file_list[file_idx].head_hash].add(file_idx)
+            for file_idx in other.size_file[item_size]:
+                header_hash_out[other._file_list[file_idx].head_hash].add(file_idx)
+        hash_intersection = set(header_hash.keys()).intersection(header_hash_out.keys())
+        # return hash_intersection, header_hash, header_hash_out
+        if hash_intersection:
+            print(f"intersect: {len(hash_intersection)}")
+        for item in hash_intersection:
+            self._out_head_hash_candidates[item] = header_hash[item]
+        for item in hash_intersection:
+            other._out_head_hash_candidates[item] = header_hash_out[item]
+
+    def find_dups_with(self, other: "FileList"):
+        if not self._out_head_hash_candidates:
+            print("No candidates for find...")
+        hash_dict: dict[str, set[int]] = defaultdict(set)
+        hash_dict_out: dict[str, set[int]] = defaultdict(set)
+        for _file_hash, file_idxs in self._out_head_hash_candidates.items():
+            for idx in file_idxs:
+                hash_dict[self._file_list[idx].hash].add(idx)
+        for _file_hash, file_idxs in other._out_head_hash_candidates.items():
+            for idx in file_idxs:
+                hash_dict_out[other._file_list[idx].hash].add(idx)
+        intersection = list(set(hash_dict.keys()).intersection(hash_dict_out))
+        if intersection:
+            print(f"{len(intersection)} dups pairs")
+        self._out_dups = {k: hash_dict[k] for k in intersection}
+        self._out_dups_keys = intersection
+        other._out_dups = {k: hash_dict_out[k] for k in intersection}
+        other._out_dups_keys = intersection
+
+    def out_dup(self, idx: int) -> list[File]:
+        return [
+            self._file_list[file_id]
+            for file_id in self._out_dups[self._out_dups_keys[idx]]
+        ]
+
+    def out_dup_list(self, idx: int) -> list[list[File]]:
+        res: list[list[File]] = []
+        for item in self._out_dups_keys[:idx]:
+            res.append(
+                list(
+                    self._file_list[file_id]
+                    for file_id in self._out_dups[item]
+                )
+            )
+        return res
+
+    def move_dups(self, dest_path: PathOrStr):
+        pass
