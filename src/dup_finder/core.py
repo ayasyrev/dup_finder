@@ -159,6 +159,7 @@ class FileList:
     def move_dups(self, dest: PathOrStr | None = None):
         dest_path = dest or self.path / "dups"
         dest_path.mkdir(exist_ok=True)
+        print(f"Dest dir: {dest_path}")
         dups_list = self.dup_list()
         for pair in dups_list:
             pair.sort(key=lambda item: len(str(item.path)))  # sort by path length
@@ -233,6 +234,7 @@ class FileList:
     def move_out_dups(self, dest: PathOrStr | None = None):
         dest_path = dest or self.path.parent / "dups"
         dest_path.mkdir(exist_ok=True)
+        print(f"Dest dir: {dest_path}")
         for item in self._out_dups_keys:
             for file_id in self._out_dups[item]:
                 file_path = self._file_list[file_id].path
