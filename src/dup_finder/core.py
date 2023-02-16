@@ -66,7 +66,7 @@ class FileList:
 
     def __repr__(self) -> str:
         res = (
-            f"Total {self.len} files, {bytes_human(self.size_all)}, "
+            f"{self.path.name}: {self.len} files, {bytes_human(self.size_all)}, "
             f"max size {bytes_human(self.sizes[0])} "
         )
         cand_repr = ""
