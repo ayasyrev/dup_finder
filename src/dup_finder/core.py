@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from pathlib import Path
 from typing import Optional
 
@@ -56,7 +56,7 @@ class FileList:
             size for size in self.sizes if len(self.size2idx[size]) > 1
         ]
         self._head_hash_candidates: dict[str, set[int]] = {}
-        self._dups: dict[str, set[int]] = defaultdict(set)
+        self._dups: dict[str, list[int]] = defaultdict(list)
         self._dups_keys: list[str] = []
         self._out_size_candidates: dict[int, set[int]] = defaultdict(set)
         self._out_head_hash_candidates: dict[str, set[int]] = {}
@@ -119,49 +119,80 @@ class FileList:
             ]
         else:
             sizes_to_check = self.dup_size_candidates[:num]
-        head_hash_candidates: dict[str, set[int]] = defaultdict(set)
+        # head_hash_candidates: dict[str, set[int]] = defaultdict(set)
+        self._head_hash_candidates: dict[int, dict[str, list[int]]] = OrderedDict()
         num_files = sum(len(self.size2idx[size]) for size in sizes_to_check)
         with Progress(transient=True) as progress:
             task = progress.add_task("Checking", total=num_files)
             for size in sizes_to_check:
+                hashes: dict[str, list[int]] = defaultdict(list)
                 for idx in self.size2idx[size]:
-                    head_hash_candidates[self.file_list[idx].head_hash].add(idx)
+                    # head_hash_candidates[self.file_list[idx].head_hash].add(idx)
+                    hashes[self.file_list[idx].head_hash].append(idx)
                     progress.advance(task)
+                hashes = {
+                    hash_val: idx_list
+                    for hash_val, idx_list in hashes.items()
+                    if len(idx_list) > 1
+                }
+                if hashes:
+                    self._head_hash_candidates[size] = hashes
         # check sizes for candidates list
-        self._head_hash_candidates = {
-            k: v for k, v in head_hash_candidates.items() if len(v) > 1
-        }
-        print(
-            f"len of head_hash candidates: {len(self._head_hash_candidates)}"
+        # self._head_hash_candidates = {
+        #     k: v for k, v in head_hash_candidates.items() if len(v) > 1
+        # }
+        len_candid = sum(
+            len(idx_list)
+            for hash_dict in self._head_hash_candidates.values()
+            for idx_list in hash_dict.values()
         )
+        if len_candid:
+            size_cand = sum(
+                len(idx_list) * (size - 1)
+                for size, hash_dict in self._head_hash_candidates.items()
+                for idx_list in hash_dict.values()
+            )
+            print(f"len of head_hash candidates: {len_candid} potential {bytes_human(size_cand)} dups.")
+        else:
+            print("No candidates.")
 
-    def find_dups(self, idx: Optional[int] = None):
+    def find_dups(
+        self,
+        num: int | None = None,
+        min_size: int = 0,
+        max_size: int | None = None,
+    ):
         if len(self._head_hash_candidates) == 0:
             print("No head hash candidates to find from...")
-        idx = idx or len(self._head_hash_candidates)
-        hash_list = list(self._head_hash_candidates.keys())[:idx]
+        num = num or len(self._head_hash_candidates)
+        size_list = list(self._head_hash_candidates.keys())[:num]
+        if min_size or max_size is not None:
+            max_size = max_size or size_list[0]
+            size_list = [size for size in size_list if size > min_size and size < max_size]
         full_size_to_check = sum(
             self.file_list[idx].size
-            for item_list in hash_list
-            for idx in self._head_hash_candidates[item_list]
+            for size in size_list
+            for idx_list in self._head_hash_candidates[size].values()
+            for idx in idx_list
         )
-        print(f"Hashing {bytes_human(full_size_to_check)}")
-        hash_dict: dict[str, set[int]] = defaultdict(set)
+        print(f"To hash: {bytes_human(full_size_to_check)}")
+        hash_dict: dict[str, list[int]] = defaultdict(list)
         with Progress(transient=True) as progress:
             task = progress.add_task("Hashing", total=full_size_to_check)
         # for _head_hash, idx_list in self._head_hash_candidates.items():
-            for head_hash in hash_list:
-                for item_id in self._head_hash_candidates[head_hash]:
-                    hash_dict[self.file_list[item_id].hash].add(item_id)
-                    progress.advance(task, advance=self.file_list[item_id].size)
+            for size in size_list:
+                for idx_list in self._head_hash_candidates[size].values():
+                    for idx in idx_list:
+                        hash_dict[self.file_list[idx].hash].append(idx)
+                        progress.advance(task, advance=self.file_list[idx].size)
 
         self._dups = {k: v for k, v in hash_dict.items() if len(v) > 1}
         self._dups_keys = list(self._dups.keys())
         print(f"Len of dups dict: {len(self._dups)}")
         dups_size = bytes_human(
             sum(
-                self.file_list[next(iter(idx_set))].size * (len(idx_set) - 1)
-                for idx_set in self._dups.values()
+                self.file_list[idx_list[0]].size * (len(idx_list) - 1)  # expecting all same size
+                for idx_list in self._dups.values()
             )
         )
         print(f"size of dups {dups_size}")
