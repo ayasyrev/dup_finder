@@ -62,13 +62,15 @@ class FileList:
     ) -> None:
         self.path = Path(path)
         _, files = get_dirs_files(path, recursive=recursive)
-        self.file_list: list[File] = [File(item) for item in files]
-        self.file_list.sort(key=lambda item: item.size, reverse=True)
+        self.file_list: list[File] = sorted(
+            [File(item) for item in files],
+            key=lambda item: item.size,
+            reverse=True,
+        )
+        self.size_all = sum(file.size for file in self.file_list)
         self.size2idx: dict[int, list[int]] = defaultdict(list)
-        self.size_all = 0
         for idx, file in enumerate(self.file_list):
             self.size2idx[file.size].append(idx)
-            self.size_all += file.size
         self.sizes: list[int] = sorted(self.size2idx.keys(), reverse=True)
         self._size_candidates: list[int] = []
         self._size_head_hash_candidates: dict[int, dict[str, list[int]]] = {}
