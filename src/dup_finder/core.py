@@ -178,7 +178,6 @@ class FileList:
             full_size_to_check = count_size(self._size_head_hash_candidates)
             num_files = count_items(self._size_head_hash_candidates)
             print(f"To hash: {bytes_human(full_size_to_check)} in {num_files} files.")
-            # hash_dict: dict[str, list[int]] = defaultdict(list)
             self._dups = {}
             with Progress(transient=True) as progress:
                 task = progress.add_task("Hashing", total=full_size_to_check)
@@ -197,15 +196,9 @@ class FileList:
                     }
                     if hash_dict:
                         self._dups[size] = hash_dict
-            # self._dups = {k: v for k, v in hash_dict.items() if len(v) > 1}
             self._dups_sizes = list(self._dups.keys())
             print(f"Len of dups dict: {len(self._dups)}")
             dups_size = bytes_human(count_size(self._dups) - sum(self._dups_sizes)) 
-            #     sum(  # expecting all same size
-            #         self.file_list[idx_list[0]].size * (len(idx_list) - 1)
-            #         for idx_list in self._dups.values()
-            #     )
-            # )
             print(f"size of dups {dups_size}")
 
     def dup(self, idx: int = 0) -> list[list[File]]:
@@ -264,13 +257,13 @@ class FileList:
             len(self.size2idx[size])
             for size in self._common_sizes
         )
-        num_files_out = sum(
+        num_files_other = sum(
             len(other.size2idx[size])
             for size in self._common_sizes
         )
         with Progress(transient=True) as progress:
             task_self = progress.add_task("self:", total=num_files_self)
-            task_out = progress.add_task("other:", total=num_files_out)
+            task_out = progress.add_task("other:", total=num_files_other)
             for size in self._common_sizes:
                 head_hash: dict[str, list[int]] = defaultdict(list)
                 head_hash_out: dict[str, list[int]] = defaultdict(list)
@@ -280,7 +273,7 @@ class FileList:
                 for idx in other.size2idx[size]:
                     head_hash_out[other.file_list[idx].head_hash].append(idx)
                     progress.advance(task_out)
-                hash_intersection = set(head_hash.keys()).intersection(head_hash_out.keys())
+                hash_intersection = set(head_hash).intersection(head_hash_out)
                 if hash_intersection:
                     self.size_head_hash_candidates_other[size] = {
                         hash_val: head_hash[hash_val] for hash_val in hash_intersection
@@ -307,7 +300,7 @@ class FileList:
             num = num or len(self.size_head_hash_candidates_other)
             size_list = list(self.size_head_hash_candidates_other)[:num]
             self_dict = {size: self.size_head_hash_candidates_other[size] for size in size_list}
-            other_dict = {size: self.size_head_hash_candidates_other[size] for size in size_list}
+            other_dict = {size: other.size_head_hash_candidates_other[size] for size in size_list}
             files_size_self = count_size(self_dict)
             files_size_other = count_size(other_dict)
             num_files_self = count_items(self_dict)
@@ -383,8 +376,6 @@ class FileList:
             dest_path = Path(dest) / self.path.name
         else:
             dest_path = self.path.parent / "dups" / self.path.name
-        # if not isinstance(dest_path, Path):
-        #     dest_path = Path(dest_path)
         dest_path.mkdir(exist_ok=True, parents=True)
         print(f"Dest dir: {dest_path}")
         for size in self.dups_sizes_other:
