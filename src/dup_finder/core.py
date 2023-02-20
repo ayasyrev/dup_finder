@@ -54,16 +54,15 @@ class File:
 class FileList:
 
     file_list: list[File]
-    _size_candidates: list[int]  # = []
-    _size_head_hash_candidates: dict[int, dict[str, list[int]]]  # = {}
-    # _dups: dict[str, list[int]] = defaultdict(list)
-    _dups: dict[int, dict[str, list[int]]]  #
-    _dups_sizes: list[int]  # = []
-    size_candidates_other: dict[int, list[int]]  # = defaultdict(list)
+    _size_candidates: list[int]
+    _size_head_hash_candidates: dict[int, dict[str, list[int]]]
+    _dups: dict[int, dict[str, list[int]]]
+    _dups_sizes: list[int]
+    size_candidates_other: dict[int, list[int]]
     size_head_hash_candidates_other: dict[int, dict[str, list[int]]]  # = {}
-    dups_other: dict[int, dict[str, list[int]]]  # = {}
-    dups_sizes_other: list[int]  # = []
-    _common_sizes: list[int] | None = None # = []
+    dups_other: dict[int, dict[str, list[int]]]
+    dups_sizes_other: list[int]
+    _common_sizes: list[int] | None = None
 
     def __init__(
         self,
