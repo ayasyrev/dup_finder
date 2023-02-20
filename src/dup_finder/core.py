@@ -218,9 +218,10 @@ class FileList:
 
     def move_dups(self, dest: PathOrStr | None = None) -> None:
         """move duplicates to dest dir."""
-        dest_path = dest or self.path / "dups" / self.path.name
-        if not isinstance(dest_path, Path):
-            dest_path = Path(dest_path)
+        if dest is not None:
+            dest_path = Path(dest) / self.path.name
+        else:
+            dest_path = self.path / "dups" / self.path.name
         dest_path.mkdir(exist_ok=True, parents=True)
         print(f"Dest dir: {dest_path}")
         dups_list = self.dup_list()
