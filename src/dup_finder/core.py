@@ -54,6 +54,15 @@ class File:
 class FileList:
 
     file_list: list[File]
+    _size_candidates: list[int]  # = []
+    _size_head_hash_candidates: dict[int, dict[str, list[int]]]  # = {}
+    _dups: dict[str, list[int]] = defaultdict(list)
+    _dups_hashes: list[str]  # = []
+    size_candidates_other: dict[int, list[int]]  # = defaultdict(list)
+    size_head_hash_candidates_other: dict[int, dict[str, list[int]]]  # = {}
+    dups_other: dict[int, dict[str, list[int]]]  # = {}
+    dups_sizes_other: list[int]  # = []
+    _common_sizes: list[int] | None = None # = []
 
     def __init__(
         self,
@@ -72,15 +81,6 @@ class FileList:
         for idx, file in enumerate(self.file_list):
             self.size2idx[file.size].append(idx)
         self.sizes: list[int] = sorted(self.size2idx.keys(), reverse=True)
-        self._size_candidates: list[int] = []
-        self._size_head_hash_candidates: dict[int, dict[str, list[int]]] = {}
-        self._dups: dict[str, list[int]] = defaultdict(list)
-        self._dups_hashes: list[str] = []
-        self.size_candidates_other: dict[int, list[int]] = defaultdict(list)
-        self.size_head_hash_candidates_other: dict[int, dict[str, list[int]]] = {}
-        self.dups_other: dict[int, dict[str, list[int]]] = {}
-        self.dups_sizes_other: list[int] = []
-        self._common_sizes: list[int] = []
         print(self.__repr__())
 
     def __repr__(self) -> str:
@@ -125,14 +125,15 @@ class FileList:
         """Find dups candidates limited by num or min size."""
         self.check_sizes()
         num = num or len(self._size_candidates)
-        if self._size_candidates[-1] < min_size:
-            sizes_to_check = [
-                size
-                for size in self._size_candidates[:num]
-                if size >= min_size
-            ]
-        else:
-            sizes_to_check = self._size_candidates[:num]
+        # if self._size_candidates[-1] < min_size:
+        #     sizes_to_check = [
+        #         size
+        #         for size in self._size_candidates[:num]
+        #         if size >= min_size
+        #     ]
+        # else:
+        #     sizes_to_check = self._size_candidates[:num]
+        sizes_to_check = self._size_candidates[:num]
         self._size_head_hash_candidates = OrderedDict()
         num_files = sum(len(self.size2idx[size]) for size in sizes_to_check)
         with Progress(transient=True) as progress:
@@ -170,9 +171,9 @@ class FileList:
         else:
             num = num or len(self._size_head_hash_candidates)
             size_list = list(self._size_head_hash_candidates.keys())[:num]
-            if min_size or max_size is not None:
-                max_size = max_size or size_list[0]
-                size_list = [size for size in size_list if size > min_size and size < max_size]
+            # if min_size or max_size is not None:
+            #     max_size = max_size or size_list[0]
+            #     size_list = [size for size in size_list if size > min_size and size < max_size]
             full_size_to_check = count_size(self._size_head_hash_candidates)
             num_files = count_items(self._size_head_hash_candidates)
             print(f"To hash: {bytes_human(full_size_to_check)} in {num_files} files.")
@@ -316,8 +317,8 @@ class FileList:
                 for size in size_list:
                     hash_dict: dict[str, list[int]] = defaultdict(list)
                     hash_dict_other: dict[str, list[int]] = defaultdict(list)
-                    for hash_val, idx_list in self_dict[size].items():
-                        for idx in idx_list:
+                    for hash_val in self_dict[size]:
+                        for idx in self_dict[size][hash_val]:
                             hash_dict[self.file_list[idx].hash].append(idx)
                             progress.advance(task_self_files)
                             progress.advance(task_self_size, advance=self.file_list[idx].size)
@@ -368,9 +369,12 @@ class FileList:
 
     def move_dups_other(self, dest: PathOrStr | None = None):
         """Move duplicates to dest folder"""
-        dest_path = dest or self.path.parent / "dups" / self.path.name
-        if not isinstance(dest_path, Path):
-            dest_path = Path(dest_path)
+        if dest is not None:
+            dest_path = Path(dest) / self.path.name
+        else:
+            dest_path = self.path.parent / "dups" / self.path.name
+        # if not isinstance(dest_path, Path):
+        #     dest_path = Path(dest_path)
         dest_path.mkdir(exist_ok=True, parents=True)
         print(f"Dest dir: {dest_path}")
         for size in self.dups_sizes_other:
