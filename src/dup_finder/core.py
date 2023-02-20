@@ -61,7 +61,7 @@ class FileList:
     size_candidates_other: dict[int, list[int]]
     size_head_hash_candidates_other: dict[int, dict[str, list[int]]]  # = {}
     dups_other: dict[int, dict[str, list[int]]]
-    dups_sizes_other: list[int]
+    dups_sizes_other: list[int] | None = None
     _common_sizes: list[int] | None = None
 
     def __init__(
@@ -179,7 +179,7 @@ class FileList:
             print(f"To hash: {bytes_human(full_size_to_check)} in {num_files} files.")
             self._dups = {}
             with Progress(transient=True) as progress:
-                task = progress.add_task("Hashing", total=full_size_to_check)
+                task = progress.add_task("Size", total=full_size_to_check)
                 task_num_files = progress.add_task("files:", total=num_files)
                 for size in size_list:
                     hash_dict: dict[str, list[int]] = defaultdict(list)
@@ -246,6 +246,7 @@ class FileList:
 
     def find_dups_candidates_with(self, other: "FileList") -> None:
         """Check header hash for candidates"""
+        # check if same path, other is part of self
         if not self._common_sizes:
             self.check_sizes_with(other)
         if not self._common_sizes:
@@ -372,6 +373,9 @@ class FileList:
 
     def move_dups_other(self, dest: PathOrStr | None = None):
         """Move duplicates to dest folder"""
+        if not self.dups_sizes_other:
+            print("No dups")
+            return
         if dest is not None:
             dest_path = Path(dest) / self.path.name
         else:
@@ -385,3 +389,4 @@ class FileList:
                     new_name = dest_path / file_path.relative_to(self.path)
                     new_name.parent.mkdir(exist_ok=True, parents=True)
                     file_path.rename(new_name)
+        self.dups_sizes_other = None
