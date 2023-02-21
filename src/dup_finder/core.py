@@ -281,6 +281,12 @@ class FileList:
     def find_dups_candidates_with(self, other: "FileList") -> None:
         """Check header hash for candidates"""
         # check if same path, other is part of self
+        if self.path.is_relative_to(other.path):
+            print(f"{self.path.name} is relative with {other.path.name}")
+            return
+        if other.path.is_relative_to(self.path):
+            print(f"{self.path.name} is relative with {other.path.name}")
+            return
         if not self._common_sizes:
             self.check_sizes_with(other)
         if not self._common_sizes:
