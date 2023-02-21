@@ -76,12 +76,15 @@ class FileList:
             key=lambda item: item.size,
             reverse=True,
         )
+        self._set_sizes()
+        print(self.__repr__())
+
+    def _set_sizes(self) -> None:
         self.size_all = sum(file.size for file in self.file_list)
         self.size2idx: dict[int, list[int]] = defaultdict(list)
         for idx, file in enumerate(self.file_list):
             self.size2idx[file.size].append(idx)
         self.sizes: list[int] = sorted(self.size2idx.keys(), reverse=True)
-        print(self.__repr__())
 
     def __repr__(self) -> str:
         return (
@@ -221,7 +224,7 @@ class FileList:
         if dest is not None:
             dest_path = Path(dest) / self.path.name
         else:
-            dest_path = self.path / "dups" / self.path.name
+            dest_path = self.path.parent / "dups" / self.path.name
         dest_path.mkdir(exist_ok=True, parents=True)
         print(f"Dest dir: {dest_path}")
         dups_list = self.dup_list()
