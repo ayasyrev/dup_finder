@@ -230,7 +230,7 @@ class FileList:
         """return dups at indexed size"""
         if not self._dups:
             print("No duplicates list.")
-            return
+            return []
         return list(
             [self.file_list[file_idx] for file_idx in idx_list]
             for idx_list in self._dups[self._dups_sizes[idx]].values()
