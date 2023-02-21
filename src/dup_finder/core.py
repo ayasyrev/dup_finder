@@ -68,14 +68,21 @@ class FileList:
         self,
         path: PathOrStr,
         recursive: bool = True,
+        from_list: Optional["FileList"] = None,
     ) -> None:
         self.path = Path(path)
-        _, files = get_dirs_files(path, recursive=recursive)
-        self.file_list: list[File] = sorted(
-            [File(item) for item in files],
-            key=lambda item: item.size,
-            reverse=True,
-        )
+        if from_list is None:
+            _, files = get_dirs_files(path, recursive=recursive)
+            self.file_list: list[File] = sorted(
+                [File(item) for item in files],
+                key=lambda item: item.size,
+                reverse=True,
+            )
+        else:
+            self.file_list = [
+                file for file in from_list.file_list
+                if file.path.is_relative_to(self.path)
+            ]
         self._set_sizes()
         print(self.__repr__())
 
@@ -102,6 +109,14 @@ class FileList:
     def len(self) -> int:
         """Length of file list."""
         return len(self.file_list)
+
+    def rm_from_list_idxs(self, removed_idx: list[int]):
+        """remove from file list files by idx list"""
+        removed_idx.sort(reverse=True)
+        # pop items from biggest index
+        for idx in removed_idx:
+            self.file_list.pop(idx)
+        self._set_sizes()
 
     def show_size(self, size: int) -> None:
         """print files with given size."""
@@ -259,11 +274,7 @@ class FileList:
                 new_name.parent.mkdir(exist_ok=True, parents=True)
                 self.file_list[file_idx].path.rename(new_name)
                 removed_idx.append(file_idx)
-        removed_idx.sort(reverse=True)
-        # pop items from biggest index
-        for idx in removed_idx:
-            self.file_list.pop(idx)
-        self._set_sizes()
+        self.rm_from_list_idxs(removed_idx)
         self._dups = {}
         self._size_head_hash_candidates = {}
 
@@ -440,10 +451,6 @@ class FileList:
                     file_path.rename(new_name)
                     removed_idx.append(idx)
         self.dups_sizes_other = None
-        removed_idx.sort(reverse=True)
-        # pop items from biggest index
-        for idx in removed_idx:
-            self.file_list.pop(idx)
-        self._set_sizes()
+        self.rm_from_list_idxs(removed_idx)
         self.dups_other = {}
         self.size_head_hash_candidates_other = {}
