@@ -224,8 +224,16 @@ class FileList:
         if dest is not None:
             dest_path = Path(dest) / self.path.name
         else:
-            dest_path = self.path.parent / "dups" / self.path.name
-        dest_path.mkdir(exist_ok=True, parents=True)
+            if self.path.is_mount():
+                dest_path = self.path / "dups" / self.path.name
+            else:
+                dest_path = self.path.parent / "dups" / self.path.name
+        try:
+            dest_path.mkdir(exist_ok=True, parents=True)
+        except Exception as exception:
+            print("cant create destination dir, exception:")
+            print(exception)
+            return
         print(f"Dest dir: {dest_path}")
         dups_list = self.dup_list()
         for pair in dups_list:
@@ -382,8 +390,16 @@ class FileList:
         if dest is not None:
             dest_path = Path(dest) / self.path.name
         else:
-            dest_path = self.path.parent / "dups" / self.path.name
-        dest_path.mkdir(exist_ok=True, parents=True)
+            if self.path.is_mount():
+                dest_path = self.path / "dups" / self.path.name
+            else:
+                dest_path = self.path.parent / "dups" / self.path.name
+        try:
+            dest_path.mkdir(exist_ok=True, parents=True)
+        except Exception as exception:
+            print("cant create destination dir, exception:")
+            print(exception)
+            return
         print(f"Dest dir: {dest_path}")
         for size in self.dups_sizes_other:
             for idx_list in self.dups_other[size].values():
