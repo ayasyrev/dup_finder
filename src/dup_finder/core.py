@@ -203,15 +203,29 @@ class FileList:
             dups_size = bytes_human(count_size(self._dups) - sum(self._dups_sizes)) 
             print(f"size of dups {dups_size}")
 
-    def dup(self, idx: int = 0) -> list[list[File]]:
-        """return dups at indexed size"""
+    def _dup_list(self) -> list[list[int]]:
+        """return dups id's of size at idx position"""
         return [
-            [self.file_list[file_idx] for file_idx in idx_list]
-            for idx_list in self._dups[self._dups_sizes[idx]].values()
+            idx_list
+            for hash_dict in self._dups.values()
+            for idx_list in hash_dict.values()
         ]
 
-    def dup_list(self, num: int | None = None) -> list[list[File]]:
+    def show_dup(self, idx: int = 0) -> list[list[File]]:
+        """return dups at indexed size"""
+        if not self._dups:
+            print("No duplicates list.")
+            return
+        return list(
+            [self.file_list[file_idx] for file_idx in idx_list]
+            for idx_list in self._dups[self._dups_sizes[idx]].values()
+        )
+
+    def show_dup_list(self, num: int | None = None) -> list[list[File]]:
         """return list of dups, if num - limited to num items"""
+        if not self._dups:
+            print("No duplicates list.")
+            return []
         num = num or len(self._dups_sizes)
         return [
             [self.file_list[file_idx] for file_idx in idx_list]
@@ -235,14 +249,23 @@ class FileList:
             print(exception)
             return
         print(f"Dest dir: {dest_path}")
-        dups_list = self.dup_list()
+        dups_list = self._dup_list()
+        removed_idx: list[int] = []
         for pair in dups_list:
-            pair.sort(key=lambda item: len(str(item.path)))  # sort by path length
+            pair.sort(key=lambda idx: len(str(self.file_list[idx].path)))  # sort by path length
             pair.pop(0)  # leave shortest
-            for file in pair:
-                new_name = dest_path / file.path.relative_to(self.path)
+            for file_idx in pair:
+                new_name = dest_path / self.file_list[file_idx].path.relative_to(self.path)
                 new_name.parent.mkdir(exist_ok=True, parents=True)
-                file.path.rename(new_name)
+                self.file_list[file_idx].path.rename(new_name)
+                removed_idx.append(file_idx)
+        removed_idx.sort(reverse=True)
+        # pop items from biggest index
+        for idx in removed_idx:
+            self.file_list.pop(idx)
+        self._set_sizes()
+        self._dups = {}
+        self._size_head_hash_candidates = {}
 
     def check_sizes_with(self, other: "FileList") -> None:
         """find files with same sizes at both dirs."""
@@ -401,6 +424,7 @@ class FileList:
             print(exception)
             return
         print(f"Dest dir: {dest_path}")
+        removed_idx: list[int] = []
         for size in self.dups_sizes_other:
             for idx_list in self.dups_other[size].values():
                 for idx in idx_list:
@@ -408,4 +432,12 @@ class FileList:
                     new_name = dest_path / file_path.relative_to(self.path)
                     new_name.parent.mkdir(exist_ok=True, parents=True)
                     file_path.rename(new_name)
+                    removed_idx.append(idx)
         self.dups_sizes_other = None
+        removed_idx.sort(reverse=True)
+        # pop items from biggest index
+        for idx in removed_idx:
+            self.file_list.pop(idx)
+        self._set_sizes()
+        self.dups_other = {}
+        self.size_head_hash_candidates_other = {}
