@@ -68,7 +68,7 @@ class FileList:
         self,
         path: PathOrStr,
         recursive: bool = True,
-        from_list: Optional["FileList"] = None,
+        from_list: Optional[list[File]] = None,
     ) -> None:
         self.path = Path(path)
         if from_list is None:
@@ -80,8 +80,9 @@ class FileList:
             )
         else:
             self.file_list = [
-                file for file in from_list.file_list
+                file for file in from_list
                 if file.path.is_relative_to(self.path)
+                and file.path.exists()
             ]
         self._set_sizes()
         print(self.__repr__())
@@ -92,6 +93,11 @@ class FileList:
         for idx, file in enumerate(self.file_list):
             self.size2idx[file.size].append(idx)
         self.sizes: list[int] = sorted(self.size2idx.keys(), reverse=True)
+
+    def rescan(self) -> None:
+        """check file list, leave only exists files."""
+        self.file_list = [file for file in self.file_list if file.path.exists()]
+        self._set_sizes()
 
     def __repr__(self) -> str:
         return (
@@ -127,6 +133,7 @@ class FileList:
             print(f"no files with size: {size}")
 
     def check_sizes(self) -> None:
+        """find sizes with same size"""
         self._size_candidates = [
             size for size in self.sizes if len(self.size2idx[size]) > 1
         ]
