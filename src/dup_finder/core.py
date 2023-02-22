@@ -63,6 +63,7 @@ class FileList:
     dups_other: dict[int, dict[str, list[int]]]
     dups_sizes_other: list[int] | None = None
     _common_sizes: list[int] | None = None
+    _created_from: Optional["FileList"] = None
 
     def __init__(
         self,
@@ -116,13 +117,32 @@ class FileList:
         """Length of file list."""
         return len(self.file_list)
 
-    def rm_from_list_idxs(self, removed_idx: list[int]):
+    def _rm_from_list_idxs(self, idx2remove: list[int]):
         """remove from file list files by idx list"""
-        removed_idx.sort(reverse=True)
+        idx2remove.sort(reverse=True)
         # pop items from biggest index
-        for idx in removed_idx:
+        for idx in idx2remove:
             self.file_list.pop(idx)
         self._set_sizes()
+
+    def pop_filelist(self, path: PathOrStr) -> Optional["FileList"]:
+        """create FileList"""
+        path = Path(path)
+        if not path.is_relative_to(self.path):
+            print(f"{path} not relative to {self.path}")
+            return
+        idx_list = [
+            idx
+            for idx_list in self.size2idx.values()
+            for idx in idx_list
+            if self.file_list[idx].path.is_relative_to(path)
+        ]
+        filelist = FileList(
+            path=path,
+            from_list=list(self.file_list[idx] for idx in idx_list)
+        )
+        self._rm_from_list_idxs(idx_list)
+        return filelist
 
     def show_size(self, size: int) -> None:
         """print files with given size."""
@@ -281,7 +301,7 @@ class FileList:
                 new_name.parent.mkdir(exist_ok=True, parents=True)
                 self.file_list[file_idx].path.rename(new_name)
                 removed_idx.append(file_idx)
-        self.rm_from_list_idxs(removed_idx)
+        self._rm_from_list_idxs(removed_idx)
         self._dups = {}
         self._size_head_hash_candidates = {}
 
@@ -458,6 +478,6 @@ class FileList:
                     file_path.rename(new_name)
                     removed_idx.append(idx)
         self.dups_sizes_other = None
-        self.rm_from_list_idxs(removed_idx)
+        self._rm_from_list_idxs(removed_idx)
         self.dups_other = {}
         self.size_head_hash_candidates_other = {}
