@@ -63,7 +63,7 @@ class FileList:
     dups_other: dict[int, dict[str, list[int]]]
     dups_sizes_other: list[int] | None = None
     _common_sizes: list[int] | None = None
-    _created_from: Optional["FileList"] = None
+    created_from: Optional["FileList"] = None
 
     def __init__(
         self,
@@ -103,7 +103,7 @@ class FileList:
     def __repr__(self) -> str:
         return (
             f"{self.path.name}: {self.len} files, {bytes_human(self.size_all)}, "
-            f"max size {bytes_human(self.sizes[0])} "
+            f"max size {bytes_human(self.sizes[0]) if self.sizes else 0} "
         )
 
     def __getitem__(self, index: int) -> File:
@@ -126,7 +126,7 @@ class FileList:
         self._set_sizes()
 
     def pop_filelist(self, path: PathOrStr) -> Optional["FileList"]:
-        """create FileList"""
+        """return subset FileList"""
         path = Path(path)
         if not path.is_relative_to(self.path):
             print(f"{path} not relative to {self.path}")
@@ -141,6 +141,7 @@ class FileList:
             path=path,
             from_list=list(self.file_list[idx] for idx in idx_list)
         )
+        filelist.created_from = self
         self._rm_from_list_idxs(idx_list)
         return filelist
 
@@ -211,6 +212,7 @@ class FileList:
         min_size: int = 0,
         max_size: int | None = None,
     ):
+        """find duplicates from candidates"""
         if len(self._size_head_hash_candidates) == 0:
             print("No head hash candidates to find from...")
         else:
@@ -319,12 +321,16 @@ class FileList:
     def find_dups_candidates_with(self, other: "FileList") -> None:
         """Check header hash for candidates"""
         # check if same path, other is part of self
-        if self.path.is_relative_to(other.path):
-            print(f"{self.path.name} is relative with {other.path.name}")
-            return
-        if other.path.is_relative_to(self.path):
-            print(f"{self.path.name} is relative with {other.path.name}")
-            return
+        # exception - if subset of
+        if self.path.is_relative_to(other.path) or other.path.is_relative_to(self.path):
+            if not (
+                self.created_from is other
+                or other.created_from is self
+                or self.created_from is other.created_from
+            ):
+                print(f"{self.path.name} is relative with {other.path.name}")
+                return
+
         if not self._common_sizes:
             self.check_sizes_with(other)
         if not self._common_sizes:
