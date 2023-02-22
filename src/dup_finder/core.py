@@ -257,7 +257,7 @@ class FileList:
 
     def show_dup(self, idx: int = 0) -> list[list[File]]:
         """return dups at indexed size"""
-        if not self._dups:
+        if not hasattr(self, "_dups") or not self._dups:
             print("No duplicates list.")
             return []
         return list(
@@ -267,7 +267,7 @@ class FileList:
 
     def show_dup_list(self, num: int | None = None) -> list[list[File]]:
         """return list of dups, if num - limited to num items"""
-        if not self._dups:
+        if not hasattr(self, "_dups") or not self._dups:
             print("No duplicates list.")
             return []
         num = num or len(self._dups_sizes)
@@ -440,7 +440,7 @@ class FileList:
             else:
                 print("Didn't find any duplicates.")
 
-    def dup_other(self, idx: int = 0) -> dict[str, list[File]]:
+    def show_dup_other(self, idx: int = 0) -> dict[str, list[File]]:
         return {
             hash_val: [
                 self.file_list[file_id]
@@ -448,10 +448,10 @@ class FileList:
             for hash_val, idx_list in self.dups_other[self.dups_sizes_other[idx]].items()
         }
 
-    def dup_list_other(self, idx: int | None) -> list[dict[str, list[File]]]:
+    def show_dup_list_other(self, idx: int | None) -> list[dict[str, list[File]]]:
         idx = idx or len(self.dups_sizes_other)
         return [
-            self.dup_other(size_id)
+            self.show_dup_other(size_id)
             for size_id in range(idx)
         ]
 
