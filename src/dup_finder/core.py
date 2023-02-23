@@ -307,7 +307,7 @@ class FileList:
             return
         print(f"Dest dir: {dest_path}")
         dups_list = self._dup_list()
-        removed_idx: list[int] = []
+        moved_idx: list[int] = []
         for pair in dups_list:
             pair.sort(key=lambda idx: len(str(self.file_list[idx].path)))  # sort by path length
             pair.pop(0)  # leave shortest
@@ -315,8 +315,8 @@ class FileList:
                 new_name = dest_path / self.file_list[file_idx].path.relative_to(self.path)
                 new_name.parent.mkdir(exist_ok=True, parents=True)
                 self.file_list[file_idx].path.rename(new_name)
-                removed_idx.append(file_idx)
-        self._rm_from_list_idxs(removed_idx)
+                moved_idx.append(file_idx)
+        self._rm_from_list_idxs(moved_idx)
         self._dups = {}
         self._size_head_hash_candidates = {}
 
@@ -494,7 +494,7 @@ class FileList:
             print(exception)
             return
         print(f"Dest dir: {dest_path}")
-        removed_idx: list[int] = []
+        moved_idx: list[int] = []
         for size in self.dups_sizes_other:
             for idx_list in self.dups_other[size].values():
                 for idx in idx_list:
@@ -502,8 +502,8 @@ class FileList:
                     new_name = dest_path / file_path.relative_to(self.path)
                     new_name.parent.mkdir(exist_ok=True, parents=True)
                     file_path.rename(new_name)
-                    removed_idx.append(idx)
+                    moved_idx.append(idx)
         self.dups_sizes_other = []
-        self._rm_from_list_idxs(removed_idx)
+        self._rm_from_list_idxs(moved_idx)
         self.dups_other = {}
         self.size_head_hash_candidates_other = {}
