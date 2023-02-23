@@ -1,4 +1,5 @@
 from collections import OrderedDict, defaultdict
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -24,6 +25,15 @@ def count_size(dict_size_hash: dict[int, dict[str, list[int]]]) -> int:
         for size in dict_size_hash
         for idx_list in dict_size_hash[size].values()
     )
+
+
+def check_filename(path: os.DirEntry[str], exclude_name: list[str]) -> bool:
+    """check if exclude patterns in filename"""
+    filename = path.path
+    for item in exclude_name:
+        if item in filename:
+            return False
+    return True
 
 
 class File:
@@ -69,11 +79,14 @@ class FileList:
         self,
         path: PathOrStr,
         recursive: bool = True,
-        from_list: Optional[list[File]] = None,
+        from_list: list[File] | None = None,
+        exclude_name: list[str] | None = None,
     ) -> None:
         self.path = Path(path)
         if from_list is None:
             _, files = get_dirs_files(path, recursive=recursive)
+            if exclude_name is not None:
+                files = [file for file in files if check_filename(file, exclude_name)]
             self.file_list: list[File] = sorted(
                 [File(item) for item in files],
                 key=lambda item: item.size,

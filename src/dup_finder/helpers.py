@@ -27,7 +27,10 @@ def ld(path: Union[str, PosixPath]) -> List[str]:
 def _get_dirs_files(path: PathOrStr) -> tuple[ListDirEntry, ListDirEntry]:
     d_f: dict[bool, ListDirEntry] = {True: [], False: []}
     for dir_entry in os.scandir(path):
-        d_f[dir_entry.is_dir()].append(dir_entry)
+        try:
+            d_f[dir_entry.is_dir()].append(dir_entry)
+        except:
+            pass
     return d_f[True], d_f[False]
 
 
