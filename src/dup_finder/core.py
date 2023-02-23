@@ -184,15 +184,14 @@ class FileList:
         """Find dups candidates limited by num or min size."""
         self.check_sizes()
         num = num or len(self._size_candidates)
-        # if self._size_candidates[-1] < min_size:
-        #     sizes_to_check = [
-        #         size
-        #         for size in self._size_candidates[:num]
-        #         if size >= min_size
-        #     ]
-        # else:
-        #     sizes_to_check = self._size_candidates[:num]
-        sizes_to_check = self._size_candidates[:num]
+        if self._size_candidates[-1] < min_size:
+            sizes_to_check = [
+                size
+                for size in self._size_candidates[:num]
+                if size >= min_size
+            ]
+        else:
+            sizes_to_check = self._size_candidates[:num]
         self._size_head_hash_candidates = OrderedDict()
         num_files = sum(len(self.size2idx[size]) for size in sizes_to_check)
         with Progress(transient=True) as progress:
@@ -231,9 +230,9 @@ class FileList:
         else:
             num = num or len(self._size_head_hash_candidates)
             size_list = list(self._size_head_hash_candidates.keys())[:num]
-            # if min_size or max_size is not None:
-            #     max_size = max_size or size_list[0]
-            #     size_list = [size for size in size_list if size > min_size and size < max_size]
+            if min_size or max_size is not None:
+                max_size = max_size or size_list[0]
+                size_list = [size for size in size_list if min_size < size < max_size]
             full_size_to_check = count_size(self._size_head_hash_candidates)
             num_files = count_items(self._size_head_hash_candidates)
             print(f"To hash: {bytes_human(full_size_to_check)} in {num_files} files.")
