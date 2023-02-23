@@ -29,8 +29,8 @@ def _get_dirs_files(path: PathOrStr) -> tuple[ListDirEntry, ListDirEntry]:
     for dir_entry in os.scandir(path):
         try:
             d_f[dir_entry.is_dir()].append(dir_entry)
-        except:
-            pass
+        except Exception as exception:   # pylint: disable=broad-exception-caught
+            print(f"trying add dir_entry {dir_entry}, got exception: {exception}")
     return d_f[True], d_f[False]
 
 
@@ -49,7 +49,7 @@ def get_dirs_files(
 
 
 def bytes_human(size: int) -> str:
-    "Return human readable memory size. Limited to terrabytes."
+    "Return human readable memory size. Limited to terabytes."
     f_size = float(size)
     for symbol in ["B", "Kb", "Mb", "Gb", "Tb"]:
         if abs(f_size) < 1024.0:

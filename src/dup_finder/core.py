@@ -69,9 +69,9 @@ class FileList:
     _dups: dict[int, dict[str, list[int]]]
     _dups_sizes: list[int]
     size_candidates_other: dict[int, list[int]]
-    size_head_hash_candidates_other: dict[int, dict[str, list[int]]]  # = {}
+    size_head_hash_candidates_other: dict[int, dict[str, list[int]]]
     dups_other: dict[int, dict[str, list[int]]]
-    dups_sizes_other: list[int] | None = None
+    dups_sizes_other: list[int]
     _common_sizes: list[int] | None = None
     created_from: Optional["FileList"] = None
 
@@ -257,7 +257,7 @@ class FileList:
                         self._dups[size] = hash_dict
             self._dups_sizes = list(self._dups.keys())
             print(f"Len of dups dict: {len(self._dups)}")
-            dups_size = bytes_human(count_size(self._dups) - sum(self._dups_sizes)) 
+            dups_size = bytes_human(count_size(self._dups) - sum(self._dups_sizes))
             print(f"size of dups {dups_size}")
 
     def _dup_list(self) -> list[list[int]]:
@@ -301,7 +301,7 @@ class FileList:
                 dest_path = self.path.parent / "dups" / self.path.name
         try:
             dest_path.mkdir(exist_ok=True, parents=True)
-        except Exception as exception:
+        except Exception as exception:  # pylint: disable=broad-exception-caught
             print("cant create destination dir, exception:")
             print(exception)
             return
@@ -453,15 +453,22 @@ class FileList:
             else:
                 print("Didn't find any duplicates.")
 
-    def show_dup_other(self, idx: int = 0) -> dict[str, list[File]]:
-        return {
-            hash_val: [
-                self.file_list[file_id]
-                for file_id in idx_list]
-            for hash_val, idx_list in self.dups_other[self.dups_sizes_other[idx]].items()
-        }
+    def show_dup_other(self, idx: int = 0) -> list[File]:
+        """show dup with other by id"""
+        if not hasattr(self, "dups_sizes_other") or not self.dups_sizes_other:
+            print("no duplicates")
+            return []
+        return [
+            self.file_list[file_id]
+            for idx_list in self.dups_other[self.dups_sizes_other[idx]].values()
+            for file_id in idx_list
+        ]
 
-    def show_dup_list_other(self, idx: int | None) -> list[dict[str, list[File]]]:
+    def show_dup_list_other(self, idx: int | None = None) -> list[list[File]]:
+        """show dup list with other list"""
+        if not hasattr(self, "dups_sizes_other") or not self.dups_sizes_other:
+            print("no duplicates")
+            return []
         idx = idx or len(self.dups_sizes_other)
         return [
             self.show_dup_other(size_id)
@@ -482,7 +489,7 @@ class FileList:
                 dest_path = self.path.parent / "dups" / self.path.name
         try:
             dest_path.mkdir(exist_ok=True, parents=True)
-        except Exception as exception:
+        except Exception as exception:  # pylint: disable=broad-exception-caught
             print("cant create destination dir, exception:")
             print(exception)
             return
@@ -496,7 +503,7 @@ class FileList:
                     new_name.parent.mkdir(exist_ok=True, parents=True)
                     file_path.rename(new_name)
                     removed_idx.append(idx)
-        self.dups_sizes_other = None
+        self.dups_sizes_other = []
         self._rm_from_list_idxs(removed_idx)
         self.dups_other = {}
         self.size_head_hash_candidates_other = {}
